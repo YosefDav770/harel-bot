@@ -1,49 +1,32 @@
-OPENAI_KEY = "sk-proj-c6LvGRqz6wSJ36UOU51iFXKE2bdRWQVreOYfb2tB8WVEsyZ9rFYc1jy2j8oj5sfhfl-OlrufT38lbkFJcJJ_969dUIBKKb0p7Cdtkmsjj2Frp1eZ9JDr-QKLqYaYjscKxtTEuR7TkOEao6Rl9NkzJoelA"
-ACCESS_TOKEN = "EAAQnr42ZAp9cBQjbMZAKLLZCBPKVEEpdlisHkaJ8rWi0ZBphbBKsF0AwZCXxmVzTn44mvr1XgPUrF5E2EjzYZCm3FgMLLZBcl3z2FZBSFD2qwUZCXa7G3ZCZBcT7yGD0JJ03Xnr58mZBwrOyZCFkcHFmZAAV6TgKWbKcUZCZAm8UppEYPgEO4UVU2ZAaedYoCuxaYL2NPSahCQMj3qUmD0UYN64mFfncv0IXAv1Nbz6iuEfqZBmQQzaKn4eZB6nEkcKZCQZDZD"
-PHONE_ID = "958301674038546"
-VERIFY_TOKEN = "harel123"
-
 import requests
 from flask import Flask, request, jsonify
-from openai import OpenAI
 
 app = Flask(__name__)
-client = OpenAI(api_key=OPENAI_KEY)
 
-def send_whatsapp_message(recipient, text):
-    url = f"https://graph.facebook.com/v18.0/{PHONE_ID}/messages"
-    headers = {
-        "Authorization": f"Bearer {ACCESS_TOKEN}",
-        "Content-Type": "application/json"
+# --- Your Access Details from Green-API ---
+# Replace the numbers inside the quotes with your real details
+ID_INSTANCE = "7103509946"
+API_TOKEN = "16176ae214c442d2b8a14fbf5ad5f1503bc7d30cb0be416e88"
+
+def send_whatsapp_message(chat_id, text):
+    url = f"https://api.green-api.com/waInstance{ID_INSTANCE}/sendMessage/{API_TOKEN}"
+    payload = {
+        "chatId": chat_id,
+        "message": text
     }
-    data = {
-        "messaging_product": "whatsapp",
-        "to": recipient,
-        "type": "text",
-        "text": {"body": text}
-    }
-    requests.post(url, headers=headers, json=data)
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(url, json=payload, headers=headers)
+    return response.json()
 
 @app.route("/", methods=['GET', 'POST'])
 def webhook():
-    if request.method == 'GET':
-        if request.args.get("hub.verify_token") == VERIFY_TOKEN:
-            return request.args.get("hub.challenge")
-        return "Verification failed", 403
-
-    data = request.json
-    try:
-        msg_body = data['entry'][0]['changes'][0]['value']['messages'][0]['text']['body']
-        sender = data['entry'][0]['changes'][0]['value']['messages'][0]['from']
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": msg_body}]
-        )
-        answer = response.choices[0].message.content
-        send_whatsapp_message(sender, answer)
-        return "ok", 200
-    except:
-        return "ok", 200
+    if request.method == 'POST':
+        data = request.json
+        print("Received message:", data)
+        return jsonify({"status": "success"}), 200
+    return "Bot is Running!", 200
 
 if __name__ == "__main__":
+    # Change '972XXXXXXXXX' to your actual phone number to test
+    send_whatsapp_message("972509902568@c.us", "Bot is now Online and Ready!")
     app.run(host='0.0.0.0', port=5000)
